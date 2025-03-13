@@ -1,0 +1,1 @@
+[x, Fs]=audioread(‘filename.wav‘)
