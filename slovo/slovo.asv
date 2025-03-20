@@ -1,0 +1,122 @@
+
+figure;
+
+
+for i = 1:2:5
+    Slovo = "";
+    switch i
+        case 1
+            Slovo = "caj";
+            [x, Fs]=audioread('caj.wav');
+        case 3
+            Slovo = "med";
+            [x, Fs]=audioread('med.wav');
+        case 5
+            Slovo = "rum";
+            [x, Fs]=audioread('rum.wav');
+    end
+    t = (0:length(x)-1) / Fs;
+    subplot(3,2,i)
+    plot(t, x);
+    xlabel('Čas (s)');
+    ylabel('Amplitúda');
+    title(Slovo);
+
+    dlzka = 0.01;
+    [energia, dlzka_okna, pocet_okien] = energia_signalu(x, dlzka, Fs);
+
+    cas = (0:pocet_okien-1) * dlzka;
+    subplot(3,2,i+1)
+    plot(cas, energia);
+    xlabel('Čas (s)');
+    ylabel('Krátkodobá energia');
+    title('Priebeh krátkodobej energie signálu');
+
+end
+
+[x, Fs]=audioread('test.wav');
+detekuj_slovo(x,Fs, prah, zaciatok, 0
+% for zaciatok = 1:3
+%     pass = 1;
+%     for prah = 1.5:0.1:6
+%         pass = 1;
+%         for i = 1:4
+%             switch i
+%                 case 1
+%                     Slovo = "caj";
+%                     [x, Fs]=audioread('caj.wav');
+%                 case 2
+%                     Slovo = "med";
+%                     [x, Fs]=audioread('med.wav');
+%                 case 3
+%                     Slovo = "rum";
+%                     [x, Fs]=audioread('rum.wav');
+%                 case 4
+%                     Slovo = "med";
+%                     [x, Fs]=audioread('test.wav');
+%             end
+%             if (detekuj_slovo(x,Fs, prah, zaciatok, 0)~=Slovo)
+%                 pass = 0;
+%             end
+%         end
+%           if(pass==1)
+%             disp("co ti jebe");
+%             disp(zaciatok);
+%             disp(prah);
+%         end
+%     end
+% end
+
+function samohlaska = detekuj_samohlasku(signal, Fs)
+    spektrum = fft(signal);
+    spektrum = abs(spektrum);
+    spektrum = log(1 + spektrum);
+
+    f = linspace(0, Fs/2, floor(length(spektrum)/2));
+    X = spektrum(1:floor(length(spektrum)/2));
+
+     A_energie = sum(spektrum(f >= 650 & f <= 800)) + sum(spektrum(f >= 1100 & f <= 1450));
+    E_energie = sum(spektrum(f >= 800 & f <= 1100)) + sum(spektrum(f >= 1450 & f <= 1700)); 
+    U_energie = sum(spektrum(f >= 250 & f <= 350)) + sum(spektrum(f >= 700 & f <= 800));
+
+
+   if ((A_energie>E_energie) & (A_energie>U_energie))
+        samohlaska = 'A';
+    elseif ((E_energie>A_energie) & (E_energie>U_energie))
+        samohlaska = 'E';
+    elseif ((U_energie>E_energie) & (U_energie>A_energie))
+        samohlaska = 'U';
+    end
+end
+
+
+function [energia, dlzka_okna, pocet_okien] = energia_signalu(signal, dlzka,Fs)
+    
+    dlzka_okna = round(dlzka * Fs);
+    pocet_okien = floor(length(signal) / dlzka_okna);
+    energia = zeros(1, pocet_okien);
+    for j = 1:pocet_okien
+        okno = signal((j-1)*dlzka_okna  + 1 : j*dlzka_okna);
+        energia(j) = sum(okno .^ 2);
+    end
+end
+
+
+function Slovo = detekuj_slovo(signal,Fs)
+    [energia, dlzka_okna, pocet_okien] = energia_signalu(signal, 0.01,Fs);
+    [maximum, index]= max(energia);
+    zaciatok = find(energia > (maximum/4.3));
+    if(length(zaciatok)<2)zac=1; end
+    zaciatok = zaciatok(zac)*dlzka_okna + offset;
+    samohlaska = signal(zaciatok:(zaciatok+floor(0.03*Fs)));
+    switch detekuj_samohlasku(samohlaska, Fs)
+        case 'A'
+            Slovo = "caj";
+        case 'E'
+            Slovo = "med";
+        case 'U'
+            Slovo = "rum";
+        otherwise
+            Slovo = "-";
+    end
+end
